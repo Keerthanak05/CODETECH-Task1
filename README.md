@@ -1,6 +1,6 @@
 Name:Keerthana
 
-Company:CODETECH IT SOLUTIONS
+Company:CODTECH IT SOLUTIONS
 
 ID:CT6WDS2037
 
