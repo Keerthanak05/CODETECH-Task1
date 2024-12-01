@@ -1,46 +1,48 @@
-# Import necessary libraries
-import numpy as np
-import pandas as pd
-from sklearn.datasets import fetch_california_housing
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error, r2_score
-import matplotlib.pyplot as plt
+import gradio as gr
+from diffusers import StableDiffusionPipeline
+import torch
 
-# Load the California Housing dataset
-california = fetch_california_housing(as_frame=True)
-data = california.frame
+# Load the Stable Diffusion model
+def load_model():
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"Using device: {device}")
+    pipe = StableDiffusionPipeline.from_pretrained(
+        "runwayml/stable-diffusion-v1-5", 
+        torch_dtype=torch.float16 if device == "cuda" else torch.float32
+    )
+    pipe.to(device)
+    return pipe
 
-# Display dataset information
-print(data.head())
+# Initialize the model
+pipe = load_model()
 
-# Select features and target variable
-# Using 'MedInc', 'AveRooms', 'AveOccup', and 'HouseAge' as features
-X = data[['MedInc', 'AveRooms', 'AveOccup', 'HouseAge']]
-y = data['MedHouseVal']
+# Define the function to generate and return an image
+def generate_and_display(prompt):
+    if not prompt.strip():
+        return "Please enter a valid text prompt."
+    try:
+        # Generate the image
+        result = pipe(prompt, num_inference_steps=50)  # Adjust steps for quality/speed trade-off
+        return result.images[0]  # Return the first generated image
+    except Exception as e:
+        return f"Error generating image: {str(e)}"
 
-# Split the dataset into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Create the Gradio interface
+interface = gr.Interface(
+    fn=generate_and_display,
+    inputs=gr.Textbox(lines=2, placeholder="Enter a descriptive prompt..."),
+    outputs="image",
+    title="Text-to-Image Generator",
+    description="Generate an image based on a descriptive text prompt using Stable Diffusion.",
+    examples=[
+        "A futuristic city with flying cars and neon lights.",
+        "A magical forest with glowing mushrooms and fairies.",
+        "A tiger walking through a dense jungle at sunset.",
+        "A steampunk airship floating above the clouds."
+    ],
+    allow_flagging="never"  # Disable flagging for simplicity
+)
 
-# Train the Linear Regression model
-model = LinearRegression()
-model.fit(X_train, y_train)
-
-# Predict on the test set
-y_pred = model.predict(X_test)
-
-# Evaluate the model
-mse = mean_squared_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
-
-print("Mean Squared Error (MSE):", mse)
-print("R-squared (R²):", r2)
-
-# Plot actual vs predicted prices
-plt.figure(figsize=(10, 6))
-plt.scatter(y_test, y_pred, alpha=0.7, color='b')
-plt.plot([0, 5], [0, 5], '--r')  # Line for perfect prediction
-plt.xlabel("Actual Prices (in $100k)")
-plt.ylabel("Predicted Prices (in $100k)")
-plt.title("Actual vs Predicted Prices")
-plt.show()
+# Launch the app
+if __name__ == "__main__":
+    interface.launch(share=True)  # Set share=True to make the app accessible via a public link
