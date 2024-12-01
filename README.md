@@ -14,6 +14,8 @@ Overview of the Project
 
 Project :TEXT-TO-IMAGE GENERATION APPLICATION
 
+![Screenshot 2024-12-01 121617](https://github.com/user-attachments/assets/73b5f92d-2d9d-4cda-9e98-69f952e9e5f0)
+
 
 1. Objectives
  
